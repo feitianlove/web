@@ -2,35 +2,35 @@ package main
 
 import (
 	"fmt"
+	"github.com/feitianlove/web/api/middleware"
 	"github.com/feitianlove/web/auth"
 	"github.com/feitianlove/web/config"
+	"github.com/feitianlove/web/logger"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	//engin := gin.New()
-	//engin.GET("/", func(c *gin.Context) {
-	//	c.JSON(200, "success")
-	//})
-	//err := engin.Run(":8080")
-	//if err != nil {
-	//	panic(err)
-	//}
-	tests()
-}
-func tests() {
 	conf, err := config.InitConfig()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", conf.CasBin)
+	//fmt.Printf("%+v\n", conf.CasBin)
 	err = auth.Init(*conf.CasBin)
 	if err != nil {
 		panic(err)
 	}
-	//
-	t, err := auth.AddPolicy("ftfeng", "/test/*", "POST|GET")
-	fmt.Println(err, t)
-	fmt.Println(auth.CheckPolicy("ftfeng", "/test/", "POST"))
-	fmt.Println(auth.CheckPolicy("ftfeng", "/test/", "GET"))
-
+	err = logger.InitLog(conf)
+	if err != nil {
+		panic(err)
+	}
+	InitWeb(conf)
+}
+func InitWeb(config *config.Config) {
+	server := gin.New()
+	server.Use(middleware.Permission())
+	server.GET("/test", func(c *gin.Context) {
+		c.JSON(200, "success")
+	})
+	err := server.Run(":8080")
+	fmt.Println(err)
 }

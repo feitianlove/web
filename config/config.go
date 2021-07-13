@@ -2,10 +2,15 @@ package config
 
 import (
 	"github.com/BurntSushi/toml"
+	"github.com/feitianlove/golib/common/logger"
 )
 
 type Config struct {
-	CasBin *CasBinConfig
+	CasBin       *CasBinConfig
+	WebLog       *logger.LogConf
+	WebAccessLog *logger.LogConf
+	MysqlLog     *logger.LogConf
+	CtrlLog      *logger.LogConf
 }
 
 type CasBinConfig struct {
@@ -26,11 +31,35 @@ func InitConfig() (*Config, error) {
 }
 func defaultConfig() *Config {
 	return &Config{
-		&CasBinConfig{
+		CasBin: &CasBinConfig{
 			Username: "",
 			Passwd:   "",
 			Port:     0,
 			Database: "",
+		},
+		WebLog: &logger.LogConf{
+			LogLevel:      "",
+			LogPath:       "",
+			LogReserveDay: 0,
+			ReportCaller:  false,
+		},
+		WebAccessLog: &logger.LogConf{
+			LogLevel:      "",
+			LogPath:       "",
+			LogReserveDay: 0,
+			ReportCaller:  false,
+		},
+		MysqlLog: &logger.LogConf{
+			LogLevel:      "",
+			LogPath:       "",
+			LogReserveDay: 0,
+			ReportCaller:  false,
+		},
+		CtrlLog: &logger.LogConf{
+			LogLevel:      "",
+			LogPath:       "",
+			LogReserveDay: 0,
+			ReportCaller:  false,
 		},
 	}
 }
