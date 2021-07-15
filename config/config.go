@@ -11,14 +11,28 @@ type Config struct {
 	WebAccessLog *logger.LogConf
 	MysqlLog     *logger.LogConf
 	CtrlLog      *logger.LogConf
+	MysqlConf    *MysqlConf
+	Web          *Web
 }
 
+type MysqlConf struct {
+	User     string
+	Passwd   string
+	Host     string
+	Port     int64
+	Database string
+}
 type CasBinConfig struct {
 	Username string
 	Passwd   string
 	Host     string
 	Port     int64
 	Database string
+}
+type Web struct {
+	ListenPort int64
+	Domain     string
+	StaticDir  string
 }
 
 func InitConfig() (*Config, error) {
@@ -39,27 +53,34 @@ func defaultConfig() *Config {
 		},
 		WebLog: &logger.LogConf{
 			LogLevel:      "info",
-			LogPath:       "./log/web.log",
+			LogPath:       "/Users/fenghui/goCode/web/log/web.log",
 			LogReserveDay: 1,
 			ReportCaller:  true,
 		},
 		WebAccessLog: &logger.LogConf{
 			LogLevel:      "info",
-			LogPath:       "./log/web_access.log",
+			LogPath:       "/Users/fenghui/goCode/web/log/web_access.log",
 			LogReserveDay: 1,
 			ReportCaller:  true,
 		},
 		MysqlLog: &logger.LogConf{
 			LogLevel:      "info",
-			LogPath:       "./log/mysql.log",
+			LogPath:       "/Users/fenghui/goCode/web/log/mysql.log",
 			LogReserveDay: 1,
 			ReportCaller:  true,
 		},
 		CtrlLog: &logger.LogConf{
 			LogLevel:      "info",
-			LogPath:       "../log/ctrl.log",
+			LogPath:       "/Users/fenghui/goCode/web/log/ctrl.log",
 			LogReserveDay: 1,
 			ReportCaller:  true,
+		},
+		MysqlConf: &MysqlConf{
+			User:     "",
+			Passwd:   "",
+			Host:     "",
+			Port:     0,
+			Database: "",
 		},
 	}
 }

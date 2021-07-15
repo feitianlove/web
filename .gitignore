@@ -1,2 +1,3 @@
-./etc/web.conf
-./log/*
+/etc/web.conf
+/log/*
+/web/*

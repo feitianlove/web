@@ -2,24 +2,27 @@ package main
 
 import (
 	"fmt"
-	"github.com/feitianlove/web/api/middleware"
+	"github.com/feitianlove/web/api/web"
 	"github.com/feitianlove/web/auth"
 	"github.com/feitianlove/web/config"
 	"github.com/feitianlove/web/logger"
+	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"sync"
+	"time"
 )
 
 func main() {
+	var wg sync.WaitGroup
 	conf, err := config.InitConfig()
-	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init  config success")
 	if err != nil {
-		logger.CtrlLog.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("init config  fail")
 		panic(err)
 	}
-	//fmt.Printf("%+v\n", conf.CasBin)
+	fmt.Printf("%+v\n", conf.CasBin)
+	fmt.Printf("%+v\n", conf.Web)
+
 	err = auth.Init(*conf.CasBin)
 	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init  auth success")
 	if err != nil {
@@ -37,14 +40,49 @@ func main() {
 		}).Error("init log  fail")
 		panic(err)
 	}
-	InitWeb(conf)
+	webClient, srv := InitWeb(conf)
+
+	defer func() {
+		//关闭srv
+		_ = srv.Close()
+		//TODO 关闭webClient的开启的数据库等
+		fmt.Println(webClient)
+	}()
+	wg.Add(1)
+	wg.Wait()
 }
-func InitWeb(config *config.Config) {
+func InitWeb(config *config.Config) (*web.ClientWeb, *http.Server) {
+	client, err := web.NewWebClient(config)
+	if err != nil {
+		logger.CtrlLog.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("NewSore err")
+		panic(err)
+	}
+	logger.CtrlLog.WithFields(logrus.Fields{}).Info("NewSore err success")
+	gin.SetMode(gin.ReleaseMode)
 	server := gin.New()
-	server.Use(middleware.Permission())
-	server.GET("/test", func(c *gin.Context) {
-		c.JSON(200, "success")
+	server.Use(static.Serve("/", static.LocalFile(config.Web.StaticDir, false)))
+	//server.Use(middleware.Permission())
+	server.NoRoute(func(c *gin.Context) {
+		// index.html no cache
+		c.Header("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate, value")
+		c.Header("Expires", "Thu, 01 Jan 1970 00:00:00 GMT")
+		c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		c.File(fmt.Sprintf("%s/index.html", config.Web.StaticDir))
 	})
-	err := server.Run(":8080")
-	fmt.Println(err)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", config.Web.Domain, config.Web.ListenPort),
+		Handler: server,
+	}
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			logger.CtrlLog.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("listen: %s\n")
+			panic(err)
+		}
+	}()
+	return client, srv
 }

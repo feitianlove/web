@@ -18,17 +18,17 @@ func Permission() gin.HandlerFunc {
 			role = c.PostForm("name")
 		}
 		if len(role) == 0 {
-			ecode.RespErrCode(c, -1, "don't get username")
+			ecode.RespErrCode(c, ecode.AuthEmpty, "don't get username")
 			c.Abort()
 		}
 		ok, err := auth.CheckPolicy(role, url, method)
 		if err != nil {
-			ecode.RespErrCode(c, -1, err.Error())
+			ecode.RespErrCode(c, ecode.AuthDenied, err.Error())
 		}
 		if ok {
 			c.Next()
 		} else {
-			ecode.RespErrCode(c, -1,
+			ecode.RespErrCode(c, ecode.AuthDenied,
 				fmt.Sprintf("%s don't have permission access  [%s] [%s] ", role, url, method))
 			c.Abort()
 		}
