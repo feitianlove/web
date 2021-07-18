@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package master;
+
+option go_package = "./m_pb";
+
+
+// 定义请求信息
+message RegisterRequest{
+    //流请求参数
+    int32 weight = 1;
+    string token = 2;
+    string ip = 3;
+    int64 port = 4;
+}
+
+// 定义响应的信息
+message RegisterResponse {
+    //响应码
+    int32 code = 1;
+    //响应值
+    string message = 2;
+}
+
+service Register {
+    rpc Register(RegisterRequest) returns(RegisterResponse){};
+}

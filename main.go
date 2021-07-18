@@ -6,6 +6,7 @@ import (
 	"github.com/feitianlove/web/auth"
 	"github.com/feitianlove/web/config"
 	"github.com/feitianlove/web/logger"
+	"github.com/feitianlove/web/master"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -20,24 +21,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", conf.CasBin)
-	fmt.Printf("%+v\n", conf.Web)
+	//fmt.Printf("%+v\n", conf.CasBin)
+	fmt.Printf("%+v\n", conf.Master)
 
 	err = auth.Init(*conf.CasBin)
 	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init  auth success")
 	if err != nil {
 		logger.CtrlLog.WithFields(logrus.Fields{
 			"error": err,
-		}).Error("auth init  fail")
+		}).Error("auth init fail")
 		panic(err)
 	}
 
 	err = logger.InitLog(conf)
-	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init log  success")
+	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init log success")
 	if err != nil {
 		logger.CtrlLog.WithFields(logrus.Fields{
 			"err": err,
-		}).Error("init log  fail")
+		}).Error("init log fail")
 		panic(err)
 	}
 	webClient, srv := InitWeb(conf)
@@ -48,18 +49,29 @@ func main() {
 		//TODO 关闭webClient的开启的数据库等
 		fmt.Println(webClient)
 	}()
+	// 启动master
+	m := master.NewMaster(conf)
+	err = master.Run(m, conf)
+	if err != nil {
+		logger.CtrlLog.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("init master fail")
+		panic(err)
+	}
+	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init master success")
 	wg.Add(1)
 	wg.Wait()
 }
+
 func InitWeb(config *config.Config) (*web.ClientWeb, *http.Server) {
 	client, err := web.NewWebClient(config)
 	if err != nil {
 		logger.CtrlLog.WithFields(logrus.Fields{
 			"error": err,
-		}).Error("NewSore err")
+		}).Error("NewStore err")
 		panic(err)
 	}
-	logger.CtrlLog.WithFields(logrus.Fields{}).Info("NewSore err success")
+	logger.CtrlLog.WithFields(logrus.Fields{}).Info("NewStore success")
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.New()
 	server.Use(static.Serve("/", static.LocalFile(config.Web.StaticDir, false)))

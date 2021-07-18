@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package master;
+
+option go_package = "./w_pb";
+
+
+// 定义请求信息
+message TaskRequest{
+    //流请求参数
+    string data = 1;
+    int64 requestId = 2;
+}
+
+// 定义响应的信息
+message TaskResponse {
+    //响应码
+    int32 code = 1;
+    //响应值
+    string message = 2;
+}
+
+service Task {
+    rpc DistributeTask(TaskRequest) returns(TaskResponse){};
+}

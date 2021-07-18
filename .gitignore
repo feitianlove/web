@@ -1,3 +1,5 @@
 /etc/web.conf
 /log/*
 /web/*
+/master/master_pb/*
+/worker/pb/*

@@ -13,6 +13,7 @@ type Config struct {
 	CtrlLog      *logger.LogConf
 	MysqlConf    *MysqlConf
 	Web          *Web
+	Master       *Master
 }
 
 type MysqlConf struct {
@@ -33,6 +34,12 @@ type Web struct {
 	ListenPort int64
 	Domain     string
 	StaticDir  string
+}
+
+type Master struct {
+	ListenPort int64
+	Domain     string
+	Token      string
 }
 
 func InitConfig() (*Config, error) {
