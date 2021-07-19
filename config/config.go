@@ -50,6 +50,7 @@ func InitConfig() (*Config, error) {
 	}
 	return config, err
 }
+
 func defaultConfig() *Config {
 	return &Config{
 		CasBin: &CasBinConfig{
