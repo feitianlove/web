@@ -7,6 +7,8 @@ import (
 	"github.com/feitianlove/web/config"
 	"github.com/feitianlove/web/logger"
 	pb "github.com/feitianlove/web/master/master_pb/m_pb"
+	w_pb "github.com/feitianlove/web/master/master_pb/w_pb"
+	"github.com/feitianlove/web/util"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"hash/crc32"
@@ -108,15 +110,54 @@ func (master *Master) Register(ctx context.Context, request *pb.RegisterRequest)
 	return response, nil
 }
 
+// 上架任务结构体
+type CosGround struct {
+	ModuleName string
+	IpSet      []string
+}
+
 func (master *Master) Schedule(data interface{}) error {
-	if req, ok := data.([]int); !ok {
+	if req, ok := data.(CosGround); !ok {
 		return errors.New("your param is invalid")
 	} else {
-		worker := master.WeightedRoundRobin()
-		//TODO 分配任务
-		fmt.Println(worker, req)
-		return nil
+		for _, item := range req.IpSet {
+			workerAddr := master.WeightedRoundRobin()
+			requestId, _ := util.AllocateRequestId()
+			// 根据module Name分解每个模块的安装步骤
+			task, err := master.DivideByModuleName(item, req.ModuleName)
+			if err != nil {
+				logger.CtrlLog.WithFields(logrus.Fields{
+					"Error": err,
+				}).Info("DivideByModuleName err")
+			}
+			// 将每个步骤发送给worker
+			client, err := ConnectWorker(workerAddr)
+			if err != nil {
+				return err
+			}
+			req := &w_pb.TaskRequest{
+				Data:      task,
+				RequestId: requestId,
+				Ip:        item,
+			}
+			ctx, _ := context.WithTimeout(context.Background(), time.Second*30)
+			response, err := client.DistributeTask(ctx, req)
+			if err != nil {
+				logger.CtrlLog.WithFields(logrus.Fields{
+					"Message":   response.Message,
+					"RequestID": requestId,
+					"Code":      response.Code,
+				}).Info(err)
+				return err
+			}
+			logger.CtrlLog.WithFields(logrus.Fields{
+				"Message":   response.Message,
+				"RequestID": requestId,
+				"Code":      response.Code,
+			}).Info("Schedule task success")
+		}
 	}
+	return nil
 }
 
 // 加权轮询
@@ -133,4 +174,33 @@ func (master *Master) WeightedRoundRobin() string {
 	//找到最大的之后
 	maxNode.currentWeight = maxNode.currentWeight - master.totalWeight
 	return fmt.Sprintf("%s:%d", maxNode.Domain, maxNode.Port)
+}
+
+//通过grpc 发送给worker 任务
+func ConnectWorker(addr string) (w_pb.TaskClient, error) {
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	grpcClient := w_pb.NewTaskClient(conn)
+	return grpcClient, nil
+}
+
+func (master *Master) DivideByModuleName(ip string, moduleName string) ([]string, error) {
+	var res []string
+	switch moduleName {
+	case "CosHttpSvr":
+		res = master.DivideCosHttpSvr(ip)
+	}
+	return res, nil
+
+}
+
+func (master *Master) DivideCosHttpSvr(ip string) []string {
+	var res = make([]string, 0)
+	// 	创建目录
+	res = append(res, "mkdir -p /usr/local/httpsvr/")
+	res = append(res, "echo "+ip+" >> /usr/local/httpsvr/test.conf")
+	return res
 }

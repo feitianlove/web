@@ -22,14 +22,10 @@ func main() {
 		panic(err)
 	}
 	//fmt.Printf("%+v\n", conf.CasBin)
-	fmt.Printf("%+v\n", conf.Master)
+	//fmt.Printf("%+v\n", conf.Master)
 
 	err = auth.Init(*conf.CasBin)
-	logger.CtrlLog.WithFields(logrus.Fields{}).Info("init  auth success")
 	if err != nil {
-		logger.CtrlLog.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("auth init fail")
 		panic(err)
 	}
 
